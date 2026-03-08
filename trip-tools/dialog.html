@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: sans-serif;
+        }
+
+        .btn-container {
+            margin-top: 10px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <p>Paste your Dispatch Details below:</p>
+    <textarea id="pasteBox" placeholder="Paste here..."></textarea>
+    <div class="btn-container">
+        <button onclick="sendData()">Process</button>
+    </div>
+
+    <script>
+        function sendData() {
+            const text = document.getElementById('pasteBox').value;
+
+            // Disable button so you don't click it twice
+            var btn = document.querySelector('button');
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            // Use the Success Handler to close the host window
+            google.script.run
+                .withSuccessHandler(function () {
+                    google.script.host.close(); // THIS CLOSES THE DIALOG
+                })
+                .withFailureHandler(function (err) {
+                    alert("Error: " + err.message);
+                    btn.disabled = false;
+                    btn.innerText = "Process";
+                })
+                .parseDispatchDetails(text);
+        }
+    </script>
+
+</body>
+
+</html>
