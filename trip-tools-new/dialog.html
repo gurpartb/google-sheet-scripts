@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; margin: 12px; }
+    textarea { width: 100%; height: 220px; box-sizing: border-box; }
+    #conflictBox {
+      display: none;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    #conflictList { margin: 4px 0 0 0; padding-left: 18px; }
+    .row { margin-top: 10px; display: flex; justify-content: flex-end; gap: 6px; }
+  </style>
+</head>
+<body>
+
+  <textarea id="pasteBox" placeholder="Paste dispatch details here..."></textarea>
+
+  <div id="conflictBox">
+    &#9888; These cells already have values and will be overwritten:
+    <ul id="conflictList"></ul>
+  </div>
+
+  <div class="row">
+    <button id="cancelBtn" style="display:none" onclick="cancel()">Cancel</button>
+    <button id="mainBtn" onclick="onMainBtn()">Process</button>
+  </div>
+
+  <script>
+    var state = 'idle'; // 'idle' | 'conflicts'
+    var pendingText = null;
+
+    function onMainBtn() {
+      if (state === 'conflicts') {
+        write(pendingText);
+      } else {
+        check();
+      }
+    }
+
+    function check() {
+      var text = document.getElementById('pasteBox').value;
+      if (!text.trim()) { alert('Please paste dispatch details first.'); return; }
+
+      setBtn('Checking...', true);
+
+      google.script.run
+        .withSuccessHandler(function(conflicts) {
+          if (conflicts.length === 0) {
+            write(text);
+          } else {
+            pendingText = text;
+            showConflicts(conflicts);
+          }
+        })
+        .withFailureHandler(function(err) {
+          alert('Error: ' + err.message);
+          setBtn('Process', false);
+        })
+        .checkConflicts(text);
+    }
+
+    function write(text) {
+      setBtn('Processing...', true);
+
+      google.script.run
+        .withSuccessHandler(function(ok) {
+          if (ok) { google.script.host.close(); } else { reset(); }
+        })
+        .withFailureHandler(function(err) {
+          alert('Error: ' + err.message);
+          reset();
+        })
+        .parseDispatchDetails(text);
+    }
+
+    function showConflicts(conflicts) {
+      var list = document.getElementById('conflictList');
+      list.innerHTML = '';
+      conflicts.forEach(function(c) {
+        var li = document.createElement('li');
+        li.textContent = c.cell + ': "' + c.current + '" \u2192 "' + c.incoming + '"';
+        list.appendChild(li);
+      });
+      document.getElementById('conflictBox').style.display = 'block';
+      document.getElementById('cancelBtn').style.display = 'inline';
+      setBtn('Yes, Overwrite', false);
+      state = 'conflicts';
+    }
+
+    function cancel() {
+      reset();
+    }
+
+    function reset() {
+      state = 'idle';
+      pendingText = null;
+      document.getElementById('conflictBox').style.display = 'none';
+      document.getElementById('cancelBtn').style.display = 'none';
+      setBtn('Process', false);
+    }
+
+    function setBtn(label, disabled) {
+      var btn = document.getElementById('mainBtn');
+      btn.innerText = label;
+      btn.disabled = disabled;
+    }
+  </script>
+
+</body>
+</html>
