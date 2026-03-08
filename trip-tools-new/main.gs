@@ -114,7 +114,11 @@ function buildWrites_(text, row) {
   const drops     = fullStops.filter(s => /DROP/i.test(s));
   const dateRegex = /[A-Z][a-z]{2}\s\d{1,2},\s\d{4}/;
 
-  // Pickup dates and cities — Column D
+  // Anchor the J–W window to the Sunday of the first pickup's week
+  const firstPickupDateMatch = pickups.length ? pickups[0].match(dateRegex) : null;
+  const windowSunday = firstPickupDateMatch ? weekSunday_(new Date(firstPickupDateMatch[0])) : null;
+
+  // Pickup dates and cities — Column D; time range — Column J–W
   pickups.forEach(function(stop, i) {
     if (i === 0) {
       const m = stop.match(dateRegex);
@@ -127,9 +131,13 @@ function buildWrites_(text, row) {
       stopType: 'pickup',
       newRow:   i >= 2
     });
+    const schedule = stopSchedule_(stop, windowSunday);
+    if (schedule) {
+      writes.push({ cellRef: `${schedule.col}${row + i + 1}`, value: schedule.timeRange, newRow: i >= 2 });
+    }
   });
 
-  // Drop dates and cities — Column E
+  // Drop dates and cities — Column E; time range — Column J–W
   drops.forEach(function(stop, i) {
     if (i === 0) {
       const m = stop.match(dateRegex);
@@ -142,9 +150,42 @@ function buildWrites_(text, row) {
       stopType: 'drop',
       newRow:   i >= 2
     });
+    const schedule = stopSchedule_(stop, windowSunday);
+    if (schedule) {
+      writes.push({ cellRef: `${schedule.col}${row + i + 1}`, value: schedule.timeRange, newRow: i >= 2 });
+    }
   });
 
   return writes;
+}
+
+/**
+ * Parses a stop block's datetime line and returns {col, timeRange}, or null
+ * if the date falls outside the 2-week window anchored to windowSunday.
+ * Window: J = windowSunday (day 0) … W = windowSunday + 13 (day 13).
+ */
+function stopSchedule_(stopText, windowSunday) {
+  if (!windowSunday) return null;
+  const m = stopText.match(
+    /([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})\s+(\d{1,2}:\d{2}\s+(?:AM|PM))\s*-\s*(?:[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4}\s+)?(\d{1,2}:\d{2}\s+(?:AM|PM))/
+  );
+  if (!m) return null;
+
+  const dayOffset = Math.round((new Date(m[1]) - windowSunday) / 864e5);
+  if (dayOffset < 0 || dayOffset > 13) return null;
+
+  return {
+    col:       String.fromCharCode(74 + dayOffset), // J(0)…W(13)
+    timeRange: m[2].trim() + ' - ' + m[3].trim()
+  };
+}
+
+/** Returns midnight of the Sunday of the week containing the given date. */
+function weekSunday_(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 /** Extracts "City, ST" from a stop block's Address field. */
