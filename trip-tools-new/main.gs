@@ -23,9 +23,9 @@ function openDispatchDialog() {
 function checkConflicts(text) {
   if (!text) return [];
 
-  const activeCell = SpreadsheetApp.getActiveSpreadsheet().getActiveCell();
-  const sheet      = activeCell.getSheet();
-  const planned    = buildWrites_(text, activeCell);
+  const row     = SpreadsheetApp.getActiveSpreadsheet().getActiveCell().getRow();
+  const sheet   = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const planned = buildWrites_(text, row);
 
   return planned.reduce(function(acc, w) {
     if (w.newRow) return acc;
@@ -46,11 +46,10 @@ function checkConflicts(text) {
 function parseDispatchDetails(text) {
   if (!text) return false;
 
-  const activeCell = SpreadsheetApp.getActiveSpreadsheet().getActiveCell();
-  const sheet      = activeCell.getSheet();
-  const startRow   = activeCell.getRow();
-  const totalCols  = sheet.getMaxColumns();
-  const planned    = buildWrites_(text, activeCell);
+  const sheet     = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const startRow  = SpreadsheetApp.getActiveSpreadsheet().getActiveCell().getRow();
+  const totalCols = sheet.getMaxColumns();
+  const planned   = buildWrites_(text, startRow);
 
   // Insert extra rows when there are more than 2 pickup OR drop stops
   const pickupCount = planned.filter(w => w.stopType === 'pickup').length;
@@ -83,14 +82,14 @@ function parseDispatchDetails(text) {
  * [{cellRef, value, note?, stopRow?}]. Used by both checkConflicts and
  * parseDispatchDetails so parsing logic lives in one place.
  */
-function buildWrites_(text, activeCell) {
+function buildWrites_(text, row) {
   const writes = [];
 
   const sections     = text.split('PICKUP & DELIVERY DETAILS');
   const loadSection  = sections[0] || '';
   const stopsSection = sections[1] || '';
 
-  // ── Load header fields ──────────────────────────────────────────────────────
+  // ── Load header — Column A ───────────────────────────────────────────────────
   const loadMatch    = loadSection.match(/Load #\s*(\d+)/);
   const freightMatch = loadSection.match(/Freight Type:\s*([^\n\r]*)/);
   const tempMatch    = loadSection.match(/Temp:\s*([^\n\r]*)/);
@@ -100,9 +99,9 @@ function buildWrites_(text, activeCell) {
   const rawFreight  = freightMatch ? freightMatch[1].trim()     : 'N/A';
   const freightType = rawFreight === 'Reefer' ? 'Reefer' : 'Van';
 
-  writes.push({ cellRef: activeCell.getA1Notation(),               value: loadNum });
-  writes.push({ cellRef: activeCell.offset(1, 0).getA1Notation(),  value: freightType });
-  writes.push({ cellRef: activeCell.offset(2, 0).getA1Notation(),  value: temp });
+  writes.push({ cellRef: `A${row}`,     value: loadNum });
+  writes.push({ cellRef: `A${row + 1}`, value: freightType });
+  writes.push({ cellRef: `A${row + 2}`, value: temp });
 
   // ── Stops ───────────────────────────────────────────────────────────────────
   const rawParts  = stopsSection.split(/(Stop #\d+:)/).filter(s => s.trim() !== '');
@@ -115,13 +114,14 @@ function buildWrites_(text, activeCell) {
   const drops     = fullStops.filter(s => /DROP/i.test(s));
   const dateRegex = /[A-Z][a-z]{2}\s\d{1,2},\s\d{4}/;
 
+  // Pickup dates and cities — Column D
   pickups.forEach(function(stop, i) {
     if (i === 0) {
       const m = stop.match(dateRegex);
-      writes.push({ cellRef: activeCell.offset(0, 3).getA1Notation(), value: m ? m[0] : 'N/A' });
+      writes.push({ cellRef: `D${row}`, value: m ? m[0] : 'N/A' });
     }
     writes.push({
-      cellRef:  activeCell.offset(i + 1, 3).getA1Notation(),
+      cellRef:  `D${row + i + 1}`,
       value:    cityState_(stop),
       note:     stop.trim(),
       stopType: 'pickup',
@@ -129,13 +129,14 @@ function buildWrites_(text, activeCell) {
     });
   });
 
+  // Drop dates and cities — Column E
   drops.forEach(function(stop, i) {
     if (i === 0) {
       const m = stop.match(dateRegex);
-      writes.push({ cellRef: activeCell.offset(0, 4).getA1Notation(), value: m ? m[0] : 'N/A' });
+      writes.push({ cellRef: `E${row}`, value: m ? m[0] : 'N/A' });
     }
     writes.push({
-      cellRef:  activeCell.offset(i + 1, 4).getA1Notation(),
+      cellRef:  `E${row + i + 1}`,
       value:    cityState_(stop),
       note:     stop.trim(),
       stopType: 'drop',
