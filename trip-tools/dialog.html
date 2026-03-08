@@ -17,27 +17,35 @@
 </head>
 
 <body>
-    <p>Paste your Dispatch Details below:</p>
     <textarea id="pasteBox" placeholder="Paste here..."></textarea>
     <div class="btn-container">
-        <button onclick="sendData()">Process</button>
+        <button id="submitBtn" onclick="processDispatch()">Process</button>
     </div>
 
     <script>
-        function sendData() {
+        function processDispatch() {
             const text = document.getElementById('pasteBox').value;
 
-            // Disable button so you don't click it twice
-            var btn = document.querySelector('button');
+            if (!text.trim()) {
+                alert("Please paste dispatch details first.");
+                return;
+            }
+
+            const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.innerText = "Processing...";
 
-            // Use the Success Handler to close the host window
             google.script.run
-                .withSuccessHandler(function () {
-                    google.script.host.close(); // THIS CLOSES THE DIALOG
+                .withSuccessHandler(function(success) {
+                    if (success) {
+                        btn.innerText = "Done!";
+                        setTimeout(function() { google.script.host.close(); }, 800);
+                    } else {
+                        btn.disabled = false;
+                        btn.innerText = "Process";
+                    }
                 })
-                .withFailureHandler(function (err) {
+                .withFailureHandler(function(err) {
                     alert("Error: " + err.message);
                     btn.disabled = false;
                     btn.innerText = "Process";
