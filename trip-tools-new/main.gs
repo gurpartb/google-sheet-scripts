@@ -28,6 +28,7 @@ function checkConflicts(text) {
   const planned    = buildWrites_(text, activeCell);
 
   return planned.reduce(function(acc, w) {
+    if (w.newRow) return acc;
     const current    = sheet.getRange(w.cellRef).getValue().toString();
     const cleanValue = w.value.toString().replace(/^'/, '');
     if (current !== '' && current !== cleanValue) {
@@ -123,7 +124,8 @@ function buildWrites_(text, activeCell) {
       cellRef:  activeCell.offset(i + 1, 3).getA1Notation(),
       value:    cityState_(stop),
       note:     stop.trim(),
-      stopType: 'pickup'
+      stopType: 'pickup',
+      newRow:   i >= 2
     });
   });
 
@@ -136,7 +138,8 @@ function buildWrites_(text, activeCell) {
       cellRef:  activeCell.offset(i + 1, 4).getA1Notation(),
       value:    cityState_(stop),
       note:     stop.trim(),
-      stopType: 'drop'
+      stopType: 'drop',
+      newRow:   i >= 2
     });
   });
 
