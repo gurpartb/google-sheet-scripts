@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "lib": ["ESNext"],
+    "types": ["google-apps-script"]
+  },
+  "typeRoots": ["../node_modules/@types"]
+}

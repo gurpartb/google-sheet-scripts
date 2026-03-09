@@ -1,1 +1,12 @@
-gitignore
+# Local dev samples / scratch files
+gitignore/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# clasp auth (contains OAuth tokens)
+.clasprc.json
+
+# OS
+.DS_Store
