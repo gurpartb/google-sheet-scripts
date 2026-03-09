@@ -27,12 +27,15 @@
   </div>
 
   <div class="row">
+    <!-- hidden until conflicts are found -->
     <button id="cancelBtn" style="display:none" onclick="cancel()">Cancel</button>
     <button id="mainBtn" onclick="onMainBtn()">Process</button>
   </div>
 
   <script>
-    var state = 'idle'; // 'idle' | 'conflicts'
+    // 'idle'      — initial state, main button says "Process"
+    // 'conflicts' — conflicts found, main button says "Yes, Overwrite", cancel visible
+    var state = 'idle';
     var pendingText = null;
 
     window.onload = function() { document.getElementById('pasteBox').focus(); };

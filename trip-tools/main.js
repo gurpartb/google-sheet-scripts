@@ -176,7 +176,7 @@ function stopSchedule_(stopText, windowSunday) {
 
   return {
     col:       String.fromCharCode(74 + dayOffset), // J(0)…W(13)
-    timeRange: m[2].trim() + ' - ' + m[3].trim()
+    timeRange: to24Hour_(m[2]) + ' - ' + to24Hour_(m[3])
   };
 }
 
@@ -186,6 +186,19 @@ function weekSunday_(date) {
   d.setDate(d.getDate() - d.getDay());
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+/** Converts "h:mm AM/PM" to 4-digit 24-hour time string e.g. "0800", "1530".
+ * @param {string} timeStr */
+function to24Hour_(timeStr) {
+  const m = timeStr.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return timeStr;
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const period = m[3].toUpperCase();
+  if (period === 'AM' && h === 12) h = 0;
+  if (period === 'PM' && h !== 12) h += 12;
+  return String(h).padStart(2, '0') + min;
 }
 
 /** Extracts "City, ST" from a stop block's Address field. */
