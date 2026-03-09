@@ -35,6 +35,8 @@
     var state = 'idle'; // 'idle' | 'conflicts'
     var pendingText = null;
 
+    window.onload = function() { document.getElementById('pasteBox').focus(); };
+
     function onMainBtn() {
       if (state === 'conflicts') {
         write(pendingText);
