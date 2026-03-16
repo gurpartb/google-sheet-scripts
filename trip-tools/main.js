@@ -189,7 +189,7 @@ function stopSchedule_(stopText, windowSunday) {
 
   return {
     col:       String.fromCharCode(74 + dayOffset), // J(0)…W(13)
-    timeRange: to24Hour_(m[2]) + ' - ' + to24Hour_(m[3])
+    timeRange: m[2] === m[3] ? to24Hour_(m[2]) : to24Hour_(m[2]) + ' - ' + to24Hour_(m[3])
   };
 }
 
