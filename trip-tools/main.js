@@ -156,6 +156,19 @@ function buildWrites_(text, row) {
     }
   });
 
+  const miles      = fetchRouteMiles_([...pickups, drops[0]]);
+  const totalMiles = fetchRouteMiles_([...pickups, ...drops]);
+  if (miles !== null || totalMiles !== null) {
+    const lastDropSched = stopSchedule_(drops[drops.length - 1], windowSunday);
+    const milesCol = lastDropSched
+      ? String.fromCharCode(lastDropSched.col.charCodeAt(0) + 2)
+      : 'Y'; // fallback: 2 past W (last possible schedule col)
+    if (miles !== null)
+      writes.push({ cellRef: `${milesCol}${row}`,     value: `${toHHMM_(miles / 50)} to del #1` });
+    if (totalMiles !== null)
+      writes.push({ cellRef: `${milesCol}${row + 1}`, value: `(${Math.round(totalMiles).toLocaleString()} mi)` });
+  }
+
   return writes;
 }
 
@@ -199,6 +212,40 @@ function to24Hour_(timeStr) {
   if (period === 'AM' && h === 12) h = 0;
   if (period === 'PM' && h !== 12) h += 12;
   return String(h).padStart(2, '0') + min;
+}
+
+/**
+ * Uses the Apps Script Maps service to drive pick0 → pick1 → … → pickN → drop0.
+ * Returns total miles as a number, or null on failure.
+ */
+function fetchRouteMiles_(stops) {
+  if (!stops || stops.length < 2) return null;
+  const locs = stops.map(cityState_).filter(Boolean);
+  if (locs.length < 2) return null;
+
+  try {
+    const finder = Maps.newDirectionFinder()
+      .setOrigin(locs[0])
+      .setDestination(locs[locs.length - 1])
+      .setMode(Maps.DirectionFinder.Mode.DRIVING);
+    for (let i = 1; i < locs.length - 1; i++) finder.addWaypoint(locs[i]);
+
+    const result = finder.getDirections();
+    if (!result.routes || !result.routes.length) return null;
+
+    let totalMeters = 0;
+    result.routes[0].legs.forEach(function(leg) { totalMeters += leg.distance.value; });
+    return totalMeters / 1609.344;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** Converts a decimal hours value to "h:mm" string e.g. 12.5 → "12:30". */
+function toHHMM_(hours) {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}:${String(m).padStart(2, '0')}`;
 }
 
 /** Extracts "City, ST" from a stop block's Address field. */
