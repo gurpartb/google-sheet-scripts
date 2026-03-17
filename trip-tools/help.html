@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: sans-serif; font-size: 13px; padding: 12px; color: #333; }
+  h2   { font-size: 14px; margin: 0 0 4px; color: #1a73e8; }
+  h3   { font-size: 13px; margin: 16px 0 4px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  ul   { margin: 4px 0 0 0; padding-left: 18px; }
+  li   { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+  <h2>🚀 Trip Tools — Help</h2>
+
+  <? if (topic === 'dispatch') { ?>
+  <h3>Add Dispatch Details</h3>
+  <ul>
+    <li>Select a cell in <strong>column A</strong> to set the target row</li>
+    <li>Paste dispatch text into the dialog</li>
+    <li>Conflicts with existing cell values are shown before writing</li>
+    <li>Pickup/drop cities are written to columns D and E</li>
+    <li>Schedule time slots fill columns J–W based on pickup date</li>
+    <li>Drive time and total miles are written two columns past the last schedule column</li>
+  </ul>
+  <? } ?>
+
+  <? if (topic === 'tripstatus') { ?>
+  <h3>Update Trip Status</h3>
+  <ul>
+    <li>Select a cell to set where <strong>Time</strong> and <strong>Distance</strong> are written</li>
+    <li>Enter current city — press Enter or click Calculate</li>
+    <li>Adjust destination (defaults to first drop) and speed (defaults to 50 mph)</li>
+    <li>Time is written to the selected cell; Distance one row below</li>
+    <li>A timestamped note (time, city, user) is prepended to the Time cell on each update</li>
+    <li>"Did you mean?" hint appears if the city name may be misspelled</li>
+  </ul>
+  <? } ?>
+</body>
+</html>

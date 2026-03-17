@@ -4,7 +4,31 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('🚀 Trip Tools')
     .addItem('Add Dispatch Details', 'openDispatchDialog')
+    .addSeparator()
+    .addItem('Update Trip Status', 'updateTripStatus')
+    .addSeparator()
+    .addSubMenu(
+      SpreadsheetApp.getUi().createMenu('Help')
+        .addItem('Add Dispatch Details', 'helpDispatch')
+        .addItem('Update Trip Status',   'helpTripStatus')
+    )
     .addToUi();
+}
+
+function helpDispatch() {
+  showHelpSidebar_('dispatch');
+}
+
+function helpTripStatus() {
+  showHelpSidebar_('tripstatus');
+}
+
+function showHelpSidebar_(topic) {
+  const tmpl = HtmlService.createTemplateFromFile('help');
+  tmpl.topic  = topic;
+  SpreadsheetApp.getUi().showSidebar(
+    tmpl.evaluate().setTitle('Trip Tools — Help')
+  );
 }
 
 function openDispatchDialog() {
@@ -67,6 +91,7 @@ function parseDispatchDetails(text) {
   planned.forEach(function(w) {
     const range = sheet.getRange(w.cellRef);
     range.setHorizontalAlignment('left');
+    if (w.format) range.setNumberFormat(w.format);
     range.setValue(w.value);
     if (w.note) range.setNote(w.note);
   });
@@ -78,9 +103,14 @@ function parseDispatchDetails(text) {
 // ─── INTERNAL HELPERS ─────────────────────────────────────────────────────────
 
 /**
+ * @typedef {{ cellRef: string, value: any, note?: string, format?: string, stopType?: string, newRow?: boolean }} WriteEntry
+ */
+
+/**
  * Parses dispatch text and returns the full list of planned cell writes as
- * [{cellRef, value, note?, stopRow?}]. Used by both checkConflicts and
- * parseDispatchDetails so parsing logic lives in one place.
+ * WriteEntry[]. Used by both checkConflicts and parseDispatchDetails so
+ * parsing logic lives in one place.
+ * @returns {WriteEntry[]}
  */
 function buildWrites_(text, row) {
   const writes = [];
@@ -133,7 +163,7 @@ function buildWrites_(text, row) {
     });
     const schedule = stopSchedule_(stop, windowSunday);
     if (schedule) {
-      writes.push({ cellRef: `${schedule.col}${row + i + 1}`, value: schedule.timeRange, newRow: i >= 2 });
+      writes.push({ cellRef: `${schedule.col}${row + i + 1}`, value: schedule.timeRange, format: '@', newRow: i >= 2 });
     }
   });
 
@@ -152,7 +182,7 @@ function buildWrites_(text, row) {
     });
     const schedule = stopSchedule_(stop, windowSunday);
     if (schedule) {
-      writes.push({ cellRef: `${schedule.col}${row + i + 1}`, value: schedule.timeRange, newRow: i >= 2 });
+      writes.push({ cellRef: `${schedule.col}${row + i + 1}`, value: schedule.timeRange, format: '@', newRow: i >= 2 });
     }
   });
 
@@ -201,7 +231,7 @@ function weekSunday_(date) {
   return d;
 }
 
-/** Converts "h:mm AM/PM" to 4-digit 24-hour time string e.g. "0800", "1530".
+/** Converts "h:mm AM/PM" to 24-hour HH:mm string e.g. "08:00", "15:30".
  * @param {string} timeStr */
 function to24Hour_(timeStr) {
   const m = timeStr.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
@@ -211,7 +241,7 @@ function to24Hour_(timeStr) {
   const period = m[3].toUpperCase();
   if (period === 'AM' && h === 12) h = 0;
   if (period === 'PM' && h !== 12) h += 12;
-  return String(h).padStart(2, '0') + min;
+  return `${String(h).padStart(2, '0')}:${min}`;
 }
 
 /**
