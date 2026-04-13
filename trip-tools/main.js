@@ -3,10 +3,9 @@
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('🚀 Trip Tools')
-    .addItem('Add Dispatch Details', 'openDispatchDialog')
-    .addSeparator()
-    .addItem('Update Trip Status', 'updateTripStatus')
-    .addSeparator()
+    .addItem('Add Dispatch Details', 'openDispatchDialog').addSeparator()
+    .addItem('Update Trip Status', 'updateTripStatus').addSeparator()
+    //.addItem('Driver Location',   'openDriverLocation').addSeparator()
     .addSubMenu(
       SpreadsheetApp.getUi().createMenu('Help')
         .addItem('Add Dispatch Details', 'helpDispatch')
@@ -187,18 +186,15 @@ function buildWrites_(text, row) {
   });
 
   const miles      = fetchRouteMiles_([...pickups, drops[0]]);
-  const totalMiles = fetchRouteMiles_([...pickups, ...drops]);
-  if (miles !== null || totalMiles !== null) {
+  // const totalMiles = fetchRouteMiles_([...pickups, ...drops]);
+  if (miles !== null) {
     const lastDropSched = stopSchedule_(drops[drops.length - 1], windowSunday);
     const milesCol = lastDropSched
       ? String.fromCharCode(lastDropSched.col.charCodeAt(0) + 2)
       : 'Y'; // fallback: 2 past W (last possible schedule col)
-    if (miles !== null)
       writes.push({ cellRef: `${milesCol}${row}`,     value: `${toHHMM_(miles / 50)} to del #1` });
-    if (totalMiles !== null)
-      writes.push({ cellRef: `${milesCol}${row + 1}`, value: `(${Math.round(totalMiles).toLocaleString()} mi)` });
+      writes.push({ cellRef: `${milesCol}${row + 1}`, value: `(${Math.round(miles).toLocaleString()} mi)` });
   }
-
   return writes;
 }
 
